@@ -195,13 +195,18 @@ class SearchStrategy:
             t_node.check_as_expanded()
             return t_node
         m_node_check = self.goal if self.check_at_gen else None
-        ret_t_node = t_node.expand(m_node_check)
-        self.update_t_node_list(t_node)
-        return ret_t_node
+        if self.worth_expanding(t_node):
+            ret_t_node = t_node.expand(m_node_check)
+            self.update_t_node_list(t_node)
+            return ret_t_node
+        return None
 
     def update_t_node_list(self, exp_t_node):
         pass
     
+    def worth_expanding(self, t_node):
+        return True
+
     def print_tree(self):
         print(self.root.to_string(self.show_lengths))
 
@@ -242,11 +247,16 @@ class BranchAndBound(SearchStrategy):
         super().__init__()
         self.show_lengths = "p"
         self.dynamic = dynamic
+        self.best_so_far = {}
 
     def update_t_node_list(self, exp_t_node):
         self.t_node_list += exp_t_node.children
         self.t_node_list.sort(key = lambda t_node: (t_node.path_length(), t_node.map_node.name))
+        if self.dynamic:
+            self.best_so_far[exp_t_node.map_node] = exp_t_node.path_length()
 
+    def worth_expanding(self, t_node):
+        return not self.dynamic or (t_node.path_length() <= self.best_so_far.get(t_node.map_node, math.inf))
 
 
 class AStarSearch(SearchStrategy):
